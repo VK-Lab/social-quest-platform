@@ -9,18 +9,20 @@ def token_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.headers.get('Authorization')
-        
+
         if not token:
             return {'message': 'Token is missing'}, 401
-        
+
         try:
             if token.startswith('Bearer '):
                 token = token.split(' ')[1]
             data = jwt.decode(token, app.secret_key, algorithms=["HS256"])
             current_user = User.query.get(data['user_id'])
+            if not current_user:
+                return {'message': 'User not found'}, 401
         except:
             return {'message': 'Token is invalid'}, 401
-        
+
         return f(current_user, *args, **kwargs)
-    
+
     return decorated

@@ -4,9 +4,7 @@ from flask_login import UserMixin
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password_hash = db.Column(db.String(256))
+    wallet_address = db.Column(db.String(42), unique=True, nullable=False)  # ETH address is 42 chars including '0x'
     xp_total = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     quests_progress = db.relationship('QuestProgress', backref='user', lazy=True)

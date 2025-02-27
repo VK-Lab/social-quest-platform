@@ -19,6 +19,16 @@
       }
     },
     "schemas": {
+      "WalletAuth": {
+        "type": "object",
+        "properties": {
+          "wallet_address": {
+            "type": "string",
+            "description": "Ethereum wallet address (0x...)",
+            "example": "0x742d35Cc6634C0532925a3b844Bc454e4438f44e"
+          }
+        }
+      },
       "User": {
         "type": "object",
         "properties": {
@@ -144,6 +154,42 @@
           },
           "401": {
             "description": "Invalid username or password"
+          }
+        }
+      }
+    },
+    "/api/auth/wallet": {
+      "post": {
+        "tags": ["Authentication"],
+        "summary": "Authenticate with wallet address",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WalletAuth"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Authentication successful",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "token": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request - Missing or invalid wallet address"
           }
         }
       }
@@ -314,7 +360,7 @@
                     "user": {
                       "type": "object",
                       "properties": {
-                        "username": {
+                        "wallet_address": {
                           "type": "string"
                         },
                         "xp_total": {

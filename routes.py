@@ -5,57 +5,43 @@ from models import Quest, QuestProgress, User
 from auth import token_required
 from datetime import datetime
 import logging
-from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
+import re
 
-class UserAuth(Resource):
+class WalletAuth(Resource):
     @limiter.limit("5/minute")
     def post(self):
-        """Login endpoint"""
+        """Wallet authentication endpoint"""
         data = request.get_json()
-        if not data or not data.get('username') or not data.get('password'):
-            return {'message': 'Missing username or password'}, 400
+        if not data or not data.get('wallet_address'):
+            return {'message': 'Missing wallet address'}, 400
 
-        user = User.query.filter_by(username=data['username']).first()
-        if user and check_password_hash(user.password_hash, data['password']):
-            token = jwt.encode(
-                {'user_id': user.id},
-                app.secret_key,
-                algorithm="HS256"
-            )
-            return {'token': token}, 200
-        return {'message': 'Invalid username or password'}, 401
+        wallet_address = data['wallet_address'].lower()
+        # Basic validation for Ethereum address format
+        if not re.match(r'^0x[a-fA-F0-9]{40}$', wallet_address):
+            return {'message': 'Invalid wallet address format'}, 400
 
-class UserRegistration(Resource):
-    @limiter.limit("3/minute")
-    def post(self):
-        """Register endpoint"""
-        data = request.get_json()
-        if not all(k in data for k in ('username', 'email', 'password')):
-            return {'message': 'Missing required fields'}, 400
+        # Get or create user
+        user = User.query.filter_by(wallet_address=wallet_address).first()
+        if not user:
+            user = User(wallet_address=wallet_address)
+            db.session.add(user)
+            db.session.commit()
 
-        if User.query.filter_by(username=data['username']).first():
-            return {'message': 'Username already exists'}, 400
-        if User.query.filter_by(email=data['email']).first():
-            return {'message': 'Email already exists'}, 400
-
-        hashed_password = generate_password_hash(data['password'])
-        new_user = User(
-            username=data['username'],
-            email=data['email'],
-            password_hash=hashed_password
+        # Generate JWT token
+        token = jwt.encode(
+            {'user_id': user.id},
+            app.secret_key,
+            algorithm="HS256"
         )
-        db.session.add(new_user)
-        db.session.commit()
-
-        return {'message': 'User created successfully'}, 201
+        return {'token': token}, 200
 
 class QuestList(Resource):
     method_decorators = [token_required]
 
     @limiter.limit("30/minute")
     def get(self, current_user):
-        logging.debug(f"GET /api/quests request from user {current_user.username}")
+        logging.debug(f"GET /api/quests request from user {current_user.wallet_address}")
         quests = Quest.query.filter_by(is_active=True).all()
         return jsonify([{
             'id': q.id,
@@ -67,7 +53,7 @@ class QuestList(Resource):
 
     @limiter.limit("10/minute")
     def post(self, current_user):
-        logging.debug(f"POST /api/quests request from user {current_user.username}")
+        logging.debug(f"POST /api/quests request from user {current_user.wallet_address}")
         data = request.get_json()
 
         if not all(k in data for k in ('title', 'description', 'xp_reward')):
@@ -93,7 +79,7 @@ class QuestProgressResource(Resource):
 
     @limiter.limit("30/minute")
     def post(self, current_user, quest_id):
-        logging.debug(f"POST /api/quests/{quest_id}/complete request from user {current_user.username}")
+        logging.debug(f"POST /api/quests/{quest_id}/complete request from user {current_user.wallet_address}")
         quest = Quest.query.get_or_404(quest_id)
 
         # Check if quest is already completed
@@ -133,11 +119,11 @@ class UserProgress(Resource):
 
     @limiter.limit("30/minute")
     def get(self, current_user):
-        logging.debug(f"GET /api/user/progress request from user {current_user.username}")
+        logging.debug(f"GET /api/user/progress request from user {current_user.wallet_address}")
         progress = QuestProgress.query.filter_by(user_id=current_user.id).all()
         return jsonify({
             'user': {
-                'username': current_user.username,
+                'wallet_address': current_user.wallet_address,
                 'xp_total': current_user.xp_total
             },
             'quests': [{
@@ -149,8 +135,7 @@ class UserProgress(Resource):
         })
 
 # Register resources
-api.add_resource(UserAuth, '/api/auth/login')
-api.add_resource(UserRegistration, '/api/auth/register')
+api.add_resource(WalletAuth, '/api/auth/wallet')
 api.add_resource(QuestList, '/api/quests')
 api.add_resource(QuestProgressResource, '/api/quests/<int:quest_id>/complete')
 api.add_resource(UserProgress, '/api/user/progress')
