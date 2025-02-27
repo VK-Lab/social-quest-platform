@@ -1,5 +1,5 @@
 import os
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -33,6 +33,11 @@ limiter = Limiter(
 # Initialize extensions
 db.init_app(app)
 
+# Root route for testing
+@app.route('/')
+def index():
+    return jsonify({"status": "healthy", "message": "API is running"})
+
 # Serve swagger.json directly
 @app.route('/static/swagger.json')
 def serve_swagger():
@@ -62,4 +67,5 @@ app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 from routes import *
 
 with app.app_context():
+    db.drop_all()  # Reset tables due to schema changes
     db.create_all()
