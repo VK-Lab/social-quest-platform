@@ -1,9 +1,8 @@
 from flask import jsonify, request
 from flask_restful import Resource
-from app import app, api, db, limiter
-from models import Quest, QuestProgress, User
+from app import app, api, limiter
+from utils.supabase import get_user_by_wallet, create_user, get_leaderboard
 from auth import token_required
-from datetime import datetime
 import logging
 import jwt
 import re
@@ -21,16 +20,16 @@ class WalletAuth(Resource):
         if not re.match(r'^0x[a-fA-F0-9]{40}$', wallet_address):
             return {'message': 'Invalid wallet address format'}, 400
 
-        # Get or create user
-        user = User.query.filter_by(wallet_address=wallet_address).first()
+        # Get or create user using Supabase
+        user = get_user_by_wallet(wallet_address)
         if not user:
-            user = User(wallet_address=wallet_address)
-            db.session.add(user)
-            db.session.commit()
+            user = create_user(wallet_address)
+            if not user:
+                return {'message': 'Error creating user'}, 500
 
         # Generate JWT token
         token = jwt.encode(
-            {'user_id': user.id},
+            {'user_id': user['id']},
             app.secret_key,
             algorithm="HS256"
         )
@@ -142,32 +141,32 @@ class Leaderboard(Resource):
     @limiter.limit("30/minute")
     def get(self, current_user):
         """Get global leaderboard based on XP"""
-        logging.debug(f"GET /api/leaderboard request from user {current_user.wallet_address}")
+        logging.debug(f"GET /api/leaderboard request from user {current_user['wallet_address']}")
 
-        # Get all users ordered by XP
-        users = User.query.order_by(User.xp_total.desc()).all()
+        # Get leaderboard data from Supabase
+        users = get_leaderboard()
 
         # Find current user's rank
         current_user_rank = next(
             (index + 1 for index, user in enumerate(users) 
-             if user.id == current_user.id),
+             if user['id'] == current_user['id']),
             None
         )
 
         # Format leaderboard data
         leaderboard = [{
             'rank': index + 1,
-            'wallet_address': user.wallet_address,
-            'xp_total': user.xp_total,
-            'is_current_user': user.id == current_user.id
+            'wallet_address': user['wallet_address'],
+            'xp_total': user['xp_total'],
+            'is_current_user': user['id'] == current_user['id']
         } for index, user in enumerate(users)]
 
         return jsonify({
             'leaderboard': leaderboard,
             'current_user': {
                 'rank': current_user_rank,
-                'wallet_address': current_user.wallet_address,
-                'xp_total': current_user.xp_total
+                'wallet_address': current_user['wallet_address'],
+                'xp_total': current_user['xp_total']
             }
         })
 
@@ -177,3 +176,6 @@ api.add_resource(QuestList, '/api/quests')
 api.add_resource(QuestProgressResource, '/api/quests/<int:quest_id>/complete')
 api.add_resource(UserProgress, '/api/user/progress')
 api.add_resource(Leaderboard, '/api/leaderboard')
+
+from models import Quest, QuestProgress, User
+from datetime import datetime
