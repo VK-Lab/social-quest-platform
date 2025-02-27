@@ -6,6 +6,7 @@ from flask_limiter.util import get_remote_address
 from flask_restful import Api
 from sqlalchemy.orm import DeclarativeBase
 from flask_swagger_ui import get_swaggerui_blueprint
+import logging
 
 class Base(DeclarativeBase):
     pass
@@ -19,8 +20,11 @@ app.secret_key = os.environ.get("SESSION_SECRET")
 # Use PostgreSQL database URL from environment variables
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-    "pool_recycle": 300,
-    "pool_pre_ping": True,
+    "pool_size": 5,  # Maximum number of database connections
+    "pool_timeout": 30,  # Timeout for getting a connection from the pool
+    "pool_recycle": 300,  # Recycle connections after 5 minutes
+    "pool_pre_ping": True,  # Verify connection before use
+    "max_overflow": 10  # Maximum number of connections that can be created beyond pool_size
 }
 
 # Setup rate limiter
@@ -67,5 +71,9 @@ app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 from routes import *
 
 with app.app_context():
-    db.drop_all()  # Reset tables due to schema changes
-    db.create_all()
+    try:
+        # Create tables without dropping existing data
+        db.create_all()
+        logging.info("Database tables created successfully")
+    except Exception as e:
+        logging.error(f"Error creating database tables: {e}")
