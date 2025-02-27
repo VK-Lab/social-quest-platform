@@ -15,5 +15,4 @@ dependencies = [
     "flask-login>=0.6.3",
     "pyjwt>=2.10.1",
     "sqlalchemy>=2.0.38",
-    "supabase>=2.13.0",
 ]
