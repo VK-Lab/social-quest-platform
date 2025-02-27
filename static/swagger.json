@@ -395,6 +395,75 @@
           }
         }
       }
+    },
+    "/api/leaderboard": {
+      "get": {
+        "summary": "Get global XP leaderboard",
+        "tags": ["Leaderboard"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Leaderboard data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "leaderboard": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "rank": {
+                            "type": "integer",
+                            "description": "Position in the leaderboard"
+                          },
+                          "wallet_address": {
+                            "type": "string",
+                            "description": "User's wallet address"
+                          },
+                          "xp_total": {
+                            "type": "integer",
+                            "description": "Total XP earned"
+                          },
+                          "is_current_user": {
+                            "type": "boolean",
+                            "description": "Indicates if this entry is the current user"
+                          }
+                        }
+                      }
+                    },
+                    "current_user": {
+                      "type": "object",
+                      "properties": {
+                        "rank": {
+                          "type": "integer",
+                          "description": "Current user's rank"
+                        },
+                        "wallet_address": {
+                          "type": "string",
+                          "description": "Current user's wallet address"
+                        },
+                        "xp_total": {
+                          "type": "integer",
+                          "description": "Current user's total XP"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      }
     }
   },
   "security": [

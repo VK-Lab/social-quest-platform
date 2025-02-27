@@ -136,8 +136,44 @@ class UserProgress(Resource):
             } for p in progress]
         })
 
+class Leaderboard(Resource):
+    method_decorators = [token_required]
+
+    @limiter.limit("30/minute")
+    def get(self, current_user):
+        """Get global leaderboard based on XP"""
+        logging.debug(f"GET /api/leaderboard request from user {current_user.wallet_address}")
+
+        # Get all users ordered by XP
+        users = User.query.order_by(User.xp_total.desc()).all()
+
+        # Find current user's rank
+        current_user_rank = next(
+            (index + 1 for index, user in enumerate(users) 
+             if user.id == current_user.id),
+            None
+        )
+
+        # Format leaderboard data
+        leaderboard = [{
+            'rank': index + 1,
+            'wallet_address': user.wallet_address,
+            'xp_total': user.xp_total,
+            'is_current_user': user.id == current_user.id
+        } for index, user in enumerate(users)]
+
+        return jsonify({
+            'leaderboard': leaderboard,
+            'current_user': {
+                'rank': current_user_rank,
+                'wallet_address': current_user.wallet_address,
+                'xp_total': current_user.xp_total
+            }
+        })
+
 # Register resources
 api.add_resource(WalletAuth, '/api/auth/wallet')
 api.add_resource(QuestList, '/api/quests')
 api.add_resource(QuestProgressResource, '/api/quests/<int:quest_id>/complete')
 api.add_resource(UserProgress, '/api/user/progress')
+api.add_resource(Leaderboard, '/api/leaderboard')
