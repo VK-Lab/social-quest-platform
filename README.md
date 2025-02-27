@@ -18,20 +18,6 @@ A blockchain-enabled social quest platform built with Flask that lets users comp
 - **API Documentation**: Swagger UI
 - **Rate Limiting**: Flask-Limiter for API protection
 
-## Available Quests
-
-1. Follow on X/Twitter (5,000 XP)
-   - URL: https://x.com/AiagentEli
-
-2. Like & Retweet Post (10,000 XP)
-   - URL: https://x.com/Arenaweb3/status/1889365205584380107
-
-3. Invite Friends (5,000 XP)
-   - URL: https://x.com/intent/post?in_reply_to=1889365205584380107&text=Dont%20miss%20the%20Draw.%20Use%20my%20code%3A%20P75E6WIT%0A%0AVisit%3A%20quest.arenavs.com
-
-4. Join Discord (3,000 XP)
-   - URL: https://discord.gg/8KKUneTs
-
 ## API Endpoints
 
 ### Authentication
