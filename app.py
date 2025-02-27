@@ -16,7 +16,8 @@ api = Api(app)
 
 # Configure app
 app.secret_key = os.environ.get("SESSION_SECRET")
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "sqlite:///social_quests.db")
+# Use PostgreSQL database URL from environment variables
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL")
 app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
     "pool_recycle": 300,
     "pool_pre_ping": True,
@@ -33,18 +34,26 @@ limiter = Limiter(
 db.init_app(app)
 
 # Swagger UI configuration
-SWAGGER_URL = '/api/docs'
-API_URL = '/static/swagger.json'
+SWAGGER_URL = '/api/docs'  # URL for exposing Swagger UI (without trailing '/')
+API_URL = '/static/swagger.json'  # Our API url (can of course be a local resource)
+
+# Call factory function to create our blueprint
 swaggerui_blueprint = get_swaggerui_blueprint(
-    SWAGGER_URL,
+    SWAGGER_URL,  # Swagger UI static files will be mapped to '{SWAGGER_URL}/dist/'
     API_URL,
-    config={
-        'app_name': "Social Quests API"
+    config={  # Swagger UI config overrides
+        'app_name': "Social Quests API",
+        'dom_id': '#swagger-ui',
+        'deepLinking': True,
+        'showExtensions': True,
+        'showCommonExtensions': True
     }
 )
+
+# Register blueprint at URL
 app.register_blueprint(swaggerui_blueprint, url_prefix=SWAGGER_URL)
 
-# Import routes after app initialization
+# Import routes after app initialization to avoid circular imports
 from routes import *
 
 with app.app_context():

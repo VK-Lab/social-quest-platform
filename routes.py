@@ -4,12 +4,14 @@ from app import app, api, db, limiter
 from models import Quest, QuestProgress, User
 from auth import token_required
 from datetime import datetime
+import logging
 
 class QuestList(Resource):
     method_decorators = [token_required]
-    
+
     @limiter.limit("30/minute")
     def get(self, current_user):
+        logging.debug(f"GET /api/quests request from user {current_user.username}")
         quests = Quest.query.filter_by(is_active=True).all()
         return jsonify([{
             'id': q.id,
@@ -21,8 +23,9 @@ class QuestList(Resource):
 
     @limiter.limit("10/minute")
     def post(self, current_user):
+        logging.debug(f"POST /api/quests request from user {current_user.username}")
         data = request.get_json()
-        
+
         if not all(k in data for k in ('title', 'description', 'xp_reward')):
             return {'message': 'Missing required fields'}, 400
 
@@ -32,31 +35,32 @@ class QuestList(Resource):
             xp_reward=data['xp_reward'],
             required_level=data.get('required_level', 0)
         )
-        
+
         db.session.add(new_quest)
         db.session.commit()
-        
+
         return {
             'message': 'Quest created successfully',
             'quest_id': new_quest.id
         }, 201
 
-class QuestProgress(Resource):
+class QuestProgressResource(Resource):
     method_decorators = [token_required]
-    
+
     @limiter.limit("30/minute")
     def post(self, current_user, quest_id):
+        logging.debug(f"POST /api/quests/{quest_id}/complete request from user {current_user.username}")
         quest = Quest.query.get_or_404(quest_id)
-        
+
         # Check if quest is already completed
         existing_progress = QuestProgress.query.filter_by(
             user_id=current_user.id,
             quest_id=quest_id
         ).first()
-        
+
         if existing_progress and existing_progress.status == 'completed':
             return {'message': 'Quest already completed'}, 400
-        
+
         if not existing_progress:
             progress = QuestProgress(
                 user_id=current_user.id,
@@ -65,15 +69,15 @@ class QuestProgress(Resource):
             db.session.add(progress)
         else:
             progress = existing_progress
-            
+
         progress.status = 'completed'
         progress.completed_at = datetime.utcnow()
-        
+
         # Update user XP
         current_user.xp_total += quest.xp_reward
-        
+
         db.session.commit()
-        
+
         return {
             'message': 'Quest completed successfully',
             'xp_gained': quest.xp_reward,
@@ -82,9 +86,10 @@ class QuestProgress(Resource):
 
 class UserProgress(Resource):
     method_decorators = [token_required]
-    
+
     @limiter.limit("30/minute")
     def get(self, current_user):
+        logging.debug(f"GET /api/user/progress request from user {current_user.username}")
         progress = QuestProgress.query.filter_by(user_id=current_user.id).all()
         return jsonify({
             'user': {
@@ -101,5 +106,5 @@ class UserProgress(Resource):
 
 # Register resources
 api.add_resource(QuestList, '/api/quests')
-api.add_resource(QuestProgress, '/api/quests/<int:quest_id>/complete')
+api.add_resource(QuestProgressResource, '/api/quests/<int:quest_id>/complete')
 api.add_resource(UserProgress, '/api/user/progress')
