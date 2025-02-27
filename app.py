@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, send_from_directory
 from flask_sqlalchemy import SQLAlchemy
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -33,15 +33,20 @@ limiter = Limiter(
 # Initialize extensions
 db.init_app(app)
 
+# Serve swagger.json directly
+@app.route('/static/swagger.json')
+def serve_swagger():
+    return send_from_directory('static', 'swagger.json')
+
 # Swagger UI configuration
-SWAGGER_URL = '/api/docs'  # URL for exposing Swagger UI (without trailing '/')
-API_URL = '/static/swagger.json'  # Our API url (can of course be a local resource)
+SWAGGER_URL = '/api/docs'  # URL for exposing Swagger UI
+API_URL = '/static/swagger.json'  # Our API url
 
 # Call factory function to create our blueprint
 swaggerui_blueprint = get_swaggerui_blueprint(
-    SWAGGER_URL,  # Swagger UI static files will be mapped to '{SWAGGER_URL}/dist/'
+    SWAGGER_URL,
     API_URL,
-    config={  # Swagger UI config overrides
+    config={
         'app_name': "Social Quests API",
         'dom_id': '#swagger-ui',
         'deepLinking': True,

@@ -5,6 +5,50 @@ from models import Quest, QuestProgress, User
 from auth import token_required
 from datetime import datetime
 import logging
+from werkzeug.security import generate_password_hash, check_password_hash
+import jwt
+
+class UserAuth(Resource):
+    @limiter.limit("5/minute")
+    def post(self):
+        """Login endpoint"""
+        data = request.get_json()
+        if not data or not data.get('username') or not data.get('password'):
+            return {'message': 'Missing username or password'}, 400
+
+        user = User.query.filter_by(username=data['username']).first()
+        if user and check_password_hash(user.password_hash, data['password']):
+            token = jwt.encode(
+                {'user_id': user.id},
+                app.secret_key,
+                algorithm="HS256"
+            )
+            return {'token': token}, 200
+        return {'message': 'Invalid username or password'}, 401
+
+class UserRegistration(Resource):
+    @limiter.limit("3/minute")
+    def post(self):
+        """Register endpoint"""
+        data = request.get_json()
+        if not all(k in data for k in ('username', 'email', 'password')):
+            return {'message': 'Missing required fields'}, 400
+
+        if User.query.filter_by(username=data['username']).first():
+            return {'message': 'Username already exists'}, 400
+        if User.query.filter_by(email=data['email']).first():
+            return {'message': 'Email already exists'}, 400
+
+        hashed_password = generate_password_hash(data['password'])
+        new_user = User(
+            username=data['username'],
+            email=data['email'],
+            password_hash=hashed_password
+        )
+        db.session.add(new_user)
+        db.session.commit()
+
+        return {'message': 'User created successfully'}, 201
 
 class QuestList(Resource):
     method_decorators = [token_required]
@@ -105,6 +149,8 @@ class UserProgress(Resource):
         })
 
 # Register resources
+api.add_resource(UserAuth, '/api/auth/login')
+api.add_resource(UserRegistration, '/api/auth/register')
 api.add_resource(QuestList, '/api/quests')
 api.add_resource(QuestProgressResource, '/api/quests/<int:quest_id>/complete')
 api.add_resource(UserProgress, '/api/user/progress')
