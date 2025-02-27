@@ -57,6 +57,12 @@
           "description": {
             "type": "string"
           },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "nullable": true,
+            "description": "Optional URL associated with the quest"
+          },
           "xp_reward": {
             "type": "integer"
           },
@@ -243,6 +249,11 @@
                   },
                   "description": {
                     "type": "string"
+                  },
+                  "url": {
+                    "type": "string",
+                    "format": "uri",
+                    "description": "Optional URL associated with the quest"
                   },
                   "xp_reward": {
                     "type": "integer",

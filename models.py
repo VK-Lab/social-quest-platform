@@ -14,6 +14,7 @@ class Quest(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
     description = db.Column(db.Text, nullable=False)
+    url = db.Column(db.String(500), nullable=True)  # Optional URL field
     xp_reward = db.Column(db.Integer, nullable=False)
     required_level = db.Column(db.Integer, default=0)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)

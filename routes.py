@@ -47,6 +47,7 @@ class QuestList(Resource):
             'id': q.id,
             'title': q.title,
             'description': q.description,
+            'url': q.url,  # Include URL in response
             'xp_reward': q.xp_reward,
             'required_level': q.required_level
         } for q in quests])
@@ -62,6 +63,7 @@ class QuestList(Resource):
         new_quest = Quest(
             title=data['title'],
             description=data['description'],
+            url=data.get('url'),  # Optional URL field
             xp_reward=data['xp_reward'],
             required_level=data.get('required_level', 0)
         )
