@@ -1,0 +1,45 @@
+:root {
+    --discord-blue: #7289DA;
+    --success-green: #43B581;
+    --background-white: #FFFFFF;
+    --text-dark: #2C2F33;
+    --accent-gold: #FAA61A;
+}
+
+.swagger-ui .topbar {
+    background-color: var(--discord-blue);
+}
+
+.swagger-ui .btn.execute {
+    background-color: var(--success-green);
+}
+
+.swagger-ui .opblock.opblock-get {
+    border-color: var(--discord-blue);
+    background: rgba(114, 137, 218, 0.1);
+}
+
+.swagger-ui .opblock.opblock-post {
+    border-color: var(--success-green);
+    background: rgba(67, 181, 129, 0.1);
+}
+
+.swagger-ui .opblock-summary-method {
+    background-color: var(--discord-blue);
+}
+
+.swagger-ui section.models {
+    border-color: var(--text-dark);
+}
+
+.swagger-ui .model-title {
+    color: var(--text-dark);
+}
+
+.swagger-ui .parameter__name {
+    color: var(--text-dark);
+}
+
+.swagger-ui .response-col_status {
+    color: var(--accent-gold);
+}

@@ -1,0 +1,242 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "Social Quests API",
+    "description": "API for managing social quests and tracking user XP",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Quest": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "xp_reward": {
+            "type": "integer"
+          },
+          "required_level": {
+            "type": "integer"
+          }
+        }
+      },
+      "QuestProgress": {
+        "type": "object",
+        "properties": {
+          "quest_id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["in_progress", "completed"]
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/api/quests": {
+      "get": {
+        "summary": "List all available quests",
+        "tags": ["Quests"],
+        "responses": {
+          "200": {
+            "description": "List of quests",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Quest"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      },
+      "post": {
+        "summary": "Create a new quest",
+        "tags": ["Quests"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "description", "xp_reward"],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "xp_reward": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "required_level": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Quest created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "quest_id": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request - Missing required fields"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      }
+    },
+    "/api/quests/{quest_id}/complete": {
+      "post": {
+        "summary": "Complete a quest",
+        "tags": ["Quests"],
+        "parameters": [
+          {
+            "name": "quest_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "ID of the quest to complete"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Quest completed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "xp_gained": {
+                      "type": "integer"
+                    },
+                    "total_xp": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request - Quest already completed"
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          },
+          "404": {
+            "description": "Quest not found"
+          }
+        }
+      }
+    },
+    "/api/user/progress": {
+      "get": {
+        "summary": "Get user's quest progress",
+        "tags": ["User"],
+        "responses": {
+          "200": {
+            "description": "User progress information",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "username": {
+                          "type": "string"
+                        },
+                        "xp_total": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "quests": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QuestProgress"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Invalid or missing token"
+          }
+        }
+      }
+    }
+  }
+}
